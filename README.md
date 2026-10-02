@@ -2,10 +2,12 @@
 
 My bouldering sessions from [TopLogger](https://app.toplogger.nu), turned into charts: a session calendar, grade progression, a grade pyramid, flash rate per wall, and a "fingerprint" of every session drawn in the real hold colours.
 
+There's also **Boulders Wrapped** (`wrapped.html`): a Spotify-Wrapped-style story per year, with a climbing personality and a share card you can save as an image.
+
 The site is plain HTML + [Observable Plot](https://observablehq.com/plot/), hosted on GitHub Pages. A GitHub Action pulls new sessions from TopLogger every morning and redeploys.
 
 ```
-site/              the website (index.html, app.js, style.css)
+site/              the website: dashboard (index.html, app.js) and Wrapped (wrapped.*), shared code in lib.js
 site/data/         climbs.json — written by the sync, read by the site
 scripts/sync.mjs   pulls sessions + logs from TopLogger's GraphQL API
 .github/workflows/ daily sync + Pages deploy

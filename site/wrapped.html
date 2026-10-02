@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Boulders Wrapped</title>
+  <meta name="description" content="A year of bouldering, wrapped.">
+  <meta name="theme-color" content="#141414">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M4 26 11 9l6 9 4-5 7 13z' fill='%23F5FF00'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=Permanent+Marker&display=swap" rel="stylesheet" crossorigin="anonymous">
+  <link rel="stylesheet" href="wrapped.css">
+</head>
+<body>
+  <div class="stage" id="stage" aria-live="polite">
+    <div class="progress" id="progress" aria-hidden="true"></div>
+    <a class="close" href="./" aria-label="Back to dashboard">×</a>
+    <div class="slides" id="slides"></div>
+    <button class="nav prev" id="prev" type="button" aria-label="Previous card"></button>
+    <button class="nav next" id="next" type="button" aria-label="Next card"></button>
+  </div>
+  <script type="module" src="wrapped.js"></script>
+</body>
+</html>

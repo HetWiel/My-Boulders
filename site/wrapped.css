@@ -1,0 +1,170 @@
+:root {
+  --chalk: #f4f3ef;
+  --tape: #ece3c4;
+  --tape-ink: #1b1a17;
+  --night: #141414;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: #0a0a0a; overflow: hidden; }
+body {
+  font-family: "Archivo", system-ui, sans-serif;
+  display: grid;
+  place-items: center;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+/* One phone-shaped stage, full screen on phones. */
+.stage {
+  position: relative;
+  height: min(100dvh, 900px);
+  width: min(100vw, calc(min(100dvh, 900px) * 9 / 16));
+  overflow: hidden;
+  background: var(--night);
+}
+@media (min-width: 600px) { .stage { border-radius: 22px; } }
+
+.progress { position: absolute; z-index: 5; top: 10px; left: 10px; right: 48px; display: flex; gap: 4px; }
+.progress i { flex: 1; height: 3px; border-radius: 2px; background: rgb(127 127 127 / .35); overflow: hidden; }
+.progress i::after { content: ""; display: block; height: 100%; width: 0; background: var(--bar, #fff); }
+.progress i.done::after { width: 100%; }
+.progress i.now::after { width: 100%; animation: fill .5s ease-out; }
+@keyframes fill { from { width: 0; } }
+
+.close {
+  position: absolute; z-index: 6; top: 2px; right: 8px; width: 36px; height: 36px;
+  display: grid; place-items: center; font-size: 26px; line-height: 1; text-decoration: none;
+  color: var(--bar, #fff);
+}
+
+.nav { position: absolute; z-index: 3; top: 0; bottom: 0; border: 0; background: transparent; cursor: pointer; padding: 0; }
+.nav.prev { left: 0; width: 30%; }
+.nav.next { right: 0; width: 70%; }
+.nav:focus-visible { outline: 3px solid var(--bar, #fff); outline-offset: -6px; }
+
+.slides { position: absolute; inset: 0; }
+
+/* A card is a wall: paint colour + the T-nut bolt-hole grid every gym wall has. */
+.slide {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; justify-content: flex-end;
+  padding: 64px 24px 40px;
+  color: var(--ink);
+  background-color: var(--bg);
+  background-image:
+    radial-gradient(circle at center, rgb(0 0 0 / .32) 0 1.6px, rgb(255 255 255 / .10) 1.7px 3px, transparent 3.1px);
+  background-size: 34px 34px;
+  background-position: 17px 17px;
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity .25s ease, visibility 0s .25s;
+}
+.slide.on { visibility: visible; opacity: 1; transition: opacity .25s ease; }
+.slide > * { position: relative; z-index: 1; }
+
+.slide .kicker { font-size: 17px; font-weight: 600; margin: 0 0 6px; font-variation-settings: "wdth" 90; opacity: .85; }
+.slide h1, .slide .big {
+  margin: 0;
+  font-weight: 900;
+  font-variation-settings: "wdth" 125;
+  line-height: .86;
+  letter-spacing: -.03em;
+  overflow-wrap: normal;
+  word-break: keep-all;
+}
+.slide .big { font-size: clamp(88px, 34vw, 168px); }
+.slide .big.mid { font-size: clamp(64px, 22vw, 112px); }
+.slide .big.small { font-size: clamp(46px, 14vw, 76px); }
+.slide h1 { font-size: clamp(40px, 12vw, 64px); }
+.slide .line { font-size: 21px; line-height: 1.25; font-weight: 600; margin: 10px 0 0; font-variation-settings: "wdth" 85; max-width: 22ch; }
+.slide .fine { font-size: 14px; margin: 10px 0 0; opacity: .8; font-weight: 500; }
+
+/* The joke, written on masking tape by a route setter. */
+.tape {
+  align-self: flex-start;
+  margin-top: 22px;
+  max-width: 100%;
+  padding: 10px 16px 9px;
+  background: var(--tape);
+  color: var(--tape-ink);
+  font-family: "Permanent Marker", "Comic Sans MS", cursive;
+  font-size: 19px;
+  line-height: 1.25;
+  transform: rotate(var(--tilt, -2deg));
+  box-shadow: 0 2px 0 rgb(0 0 0 / .12);
+  clip-path: polygon(0 4%, 3% 0, 97% 3%, 100% 0, 99% 96%, 100% 100%, 2% 97%, 0 100%);
+}
+.slide.on .tape { animation: stick .45s .5s both cubic-bezier(.2, 1.4, .4, 1); }
+@keyframes stick { from { opacity: 0; transform: rotate(calc(var(--tilt, -2deg) - 6deg)) translateY(10px) scale(.94); } }
+
+/* Decorative holds, bolted to the wall. */
+.holds-deco { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
+.holds-deco svg { position: absolute; filter: drop-shadow(0 6px 0 rgb(0 0 0 / .18)); }
+
+/* Simple in-card charts */
+.bars { display: flex; align-items: flex-end; gap: 6px; height: 120px; margin: 18px 0 4px; }
+.bars div { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; gap: 4px; }
+.bars b { display: block; width: 100%; background: currentColor; border-radius: 4px 4px 0 0; height: var(--h); min-height: 3px; transform-origin: bottom; }
+.bars span { font-size: 12px; font-weight: 600; opacity: .8; }
+.bars em { font-style: normal; font-size: 12px; font-weight: 700; }
+.bars .dim b { opacity: .35; }
+.slide.on .bars b { animation: grow .7s cubic-bezier(.2, .9, .3, 1) both; animation-delay: calc(var(--i, 0) * 40ms + .15s); }
+@keyframes grow { from { transform: scaleY(0); } }
+
+.strip { display: flex; height: 26px; border-radius: 6px; overflow: hidden; margin-top: 20px; gap: 2px; }
+.strip i { flex: var(--n); background: var(--c); box-shadow: inset 0 0 0 1px rgb(127 127 127 / .35); }
+
+.rank { list-style: none; padding: 0; margin: 14px 0 0; display: grid; gap: 4px; }
+.rank li { display: grid; grid-template-columns: 34px 1fr auto; align-items: baseline; gap: 8px; font-size: 22px; font-weight: 700; font-variation-settings: "wdth" 80; line-height: 1.1; }
+.rank li:first-child { font-size: 30px; font-variation-settings: "wdth" 100; }
+.rank .n { font-weight: 900; opacity: .55; font-variation-settings: "wdth" 125; }
+.rank .c { font-size: 15px; font-weight: 600; opacity: .8; }
+
+.chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.chips span { border: 2px solid currentColor; border-radius: 999px; padding: 5px 12px; font-size: 14px; font-weight: 700; }
+
+/* Share card */
+.card {
+  background: var(--chalk); color: var(--night);
+  border-radius: 18px; padding: 20px 20px 18px;
+  display: grid; gap: 14px;
+  box-shadow: 0 10px 0 rgb(0 0 0 / .25);
+}
+.card .who { font-size: 14px; font-weight: 700; display: flex; justify-content: space-between; }
+.card .persona { font-size: 34px; line-height: .92; font-weight: 900; font-variation-settings: "wdth" 115; letter-spacing: -.02em; }
+.card .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.card h3 { margin: 0 0 4px; font-size: 12px; font-weight: 600; opacity: .65; }
+.card ol { margin: 0; padding-left: 18px; font-size: 15px; font-weight: 700; line-height: 1.3; font-variation-settings: "wdth" 80; }
+.card .nums { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; border-top: 2px solid var(--night); padding-top: 12px; }
+.card .nums b { display: block; font-size: 26px; font-weight: 900; font-variation-settings: "wdth" 110; line-height: 1; }
+.card .nums span { font-size: 11.5px; font-weight: 600; opacity: .7; }
+.card .swatch { display: inline-block; width: 14px; height: 14px; border-radius: 50%; vertical-align: -2px; margin-right: 6px; box-shadow: inset 0 0 0 1px rgb(0 0 0 / .25); }
+.card .url { font-size: 12px; opacity: .6; font-weight: 600; }
+
+.actions { position: relative; z-index: 4; display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.actions button, .actions a {
+  font: inherit; font-size: 15px; font-weight: 700; text-decoration: none;
+  padding: 10px 16px; border-radius: 999px; cursor: pointer;
+  border: 2px solid currentColor; background: transparent; color: inherit;
+}
+.actions .primary { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.actions :focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+
+/* Year picker on the first card */
+.years { position: relative; z-index: 4; display: flex; flex-wrap: wrap; gap: 8px; margin-top: 22px; }
+.years button {
+  font: inherit; font-size: 16px; font-weight: 800; padding: 10px 18px; border-radius: 999px; cursor: pointer;
+  border: 2px solid currentColor; background: transparent; color: inherit; font-variation-settings: "wdth" 110;
+}
+.years button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+.years button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+
+.hint { font-size: 13px; font-weight: 600; opacity: .7; margin-top: 14px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .slide, .slide.on { transition: none; }
+  .slide.on .tape, .slide.on .bars b, .progress i.now::after { animation: none; }
+}
+
+.share-title { margin-bottom: 18px !important; }

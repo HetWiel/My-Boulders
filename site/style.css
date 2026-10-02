@@ -87,6 +87,14 @@ h2 { margin: 0; font-size: 17px; font-weight: 700; font-variation-settings: "wdt
 .sub { margin: 4px 0 0; color: var(--text-secondary); font-size: 13.5px; }
 
 .filters { display: flex; flex-wrap: wrap; gap: 6px; }
+.wrapped-link {
+  display: inline-flex; align-items: center; gap: 10px; margin: 0 0 18px;
+  padding: 12px 20px 12px 14px; border-radius: 999px; text-decoration: none;
+  background: #F5FF00; color: #141414; font-weight: 800; font-size: 16px; font-variation-settings: "wdth" 110;
+}
+.wrapped-link::before { content: ""; width: 22px; height: 22px; border-radius: 50% 42% 55% 48%; background: #E60F77; box-shadow: inset 0 0 0 7px #E60F77, inset 0 0 0 11px #141414; }
+.wrapped-link:hover { background: #fffb7a; }
+.wrapped-link:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 .filters button {
   font: inherit; font-size: 13.5px; font-weight: 600;
   padding: 7px 14px; border-radius: 999px; cursor: pointer;

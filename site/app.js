@@ -1,31 +1,11 @@
 import * as Plot from 'https://cdn.jsdelivr.net/npm/@observablehq/plot@0.6/+esm';
 import * as d3 from 'https://cdn.jsdelivr.net/npm/d3@7/+esm';
-
-// ---------- grades ----------
-// TopLogger stores grades as numbers: 600 = 6a, 617 = 6a+, 633 = 6b … (Font scale).
-const FONT = [
-  [200, '2'], [250, '2+'], [300, '3a'], [333, '3b'], [367, '3c'], [400, '4a'], [433, '4b'], [467, '4c'],
-  [500, '5a'], [517, '5a+'], [533, '5b'], [550, '5b+'], [567, '5c'], [583, '5c+'],
-  [600, '6a'], [617, '6a+'], [633, '6b'], [650, '6b+'], [667, '6c'], [683, '6c+'],
-  [700, '7a'], [717, '7a+'], [733, '7b'], [750, '7b+'], [767, '7c'], [783, '7c+'],
-  [800, '8a'], [817, '8a+'], [833, '8b'], [850, '8b+'], [867, '8c'], [883, '8c+'], [900, '9a'],
-];
-const snap = (g) => {
-  if (!g) return null;
-  let best = FONT[0][0];
-  for (const [v] of FONT) if (Math.abs(v - g) < Math.abs(best - g)) best = v;
-  return best;
-};
-const gradeName = (g) => (g ? FONT.find(([v]) => v === snap(g))[1] : '?');
-
-const TICK = { 0: 'attempt', 1: 'redpoint', 2: 'flash', 3: 'onsight' };
+import { FONT, snap, gradeName, parse, DAY, loadData, summarize } from './lib.js';
 
 // ---------- helpers ----------
 const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 const fmtDate = d3.utcFormat('%a %-d %b %Y');
 const fmtShort = d3.utcFormat('%-d %b');
-const parse = (s) => new Date(s + 'T00:00:00Z');
-const DAY = 864e5;
 const tip = document.getElementById('tip');
 function showTip(evt, html) {
   tip.innerHTML = html;
@@ -42,11 +22,7 @@ function showTip(evt, html) {
 const hideTip = () => (tip.hidden = true);
 
 // ---------- data ----------
-const raw = await fetch('data/climbs.json', { cache: 'no-cache' }).then((r) => r.json());
-const gyms = raw.gyms;
-const gymName = (id) => gyms[id]?.name ?? 'Unknown gym';
-const allSessions = raw.sessions.map((s) => ({ ...s, d: parse(s.date) }));
-const allLogs = raw.logs.filter((l) => l.type === 'boulder').map((l) => ({ ...l, d: parse(l.date), g: snap(l.grade) }));
+const { gymName, sessions: allSessions, logs: allLogs } = await loadData();
 
 const lastDate = d3.max(allSessions, (s) => s.d);
 const firstDate = d3.min(allSessions, (s) => s.d);
@@ -60,40 +36,6 @@ const RANGES = [
 
 document.getElementById('meta').textContent =
   `${allSessions.length} sessions since ${d3.utcFormat('%B %Y')(firstDate)} · last session ${fmtShort(lastDate)}`;
-
-// Turn raw logs into one record per boulder per session (what you did on it that day),
-// and one record per boulder overall (did you ever send it, how).
-function summarize(logs) {
-  const perSession = d3.rollups(
-    logs,
-    (v) => {
-      v.sort((a, b) => a.try - b.try);
-      const sent = v.find((l) => l.ticked);
-      const first = v[0];
-      return {
-        climb: first.climb, date: first.date, d: first.d, gym: first.gym, grade: first.grade, g: first.g,
-        color: first.color, wall: first.wall,
-        sent: !!sent,
-        // flash only counts when the first ever log on the climb was the tick
-        how: sent ? (sent.try === 0 && sent.tickType === 2 ? 'flash' : sent.tick > 0 ? 'repeat' : 'redpoint') : 'attempt',
-      };
-    },
-    (l) => l.date,
-    (l) => l.climb
-  ).flatMap(([, climbs]) => climbs.map(([, v]) => v));
-
-  const perClimb = d3.rollups(
-    perSession,
-    (v) => {
-      const firstSend = v.filter((x) => x.sent && x.how !== 'repeat').sort((a, b) => a.d - b.d)[0];
-      const any = v[0];
-      return { ...any, ...(firstSend || {}), sent: !!firstSend, how: firstSend ? firstSend.how : 'attempt', tries: v.length };
-    },
-    (x) => x.climb
-  ).map(([, v]) => v);
-
-  return { perSession, perClimb };
-}
 
 // ---------- state ----------
 let range = RANGES[0];
