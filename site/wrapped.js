@@ -5,6 +5,7 @@ import { DAY, gradeName, loadClimbers, loadData, pageUrl, summarize } from './li
 const { list: climbers, current: climber, isOwner } = await loadClimbers();
 const { gymName, sessions: allSessions, logs: allLogs } = await loadData(climber.slug);
 const CLIMBER = climber.name;
+const OWNER = climbers[0].name;
 const climberParam = isOwner ? null : climber.slug;
 // Everyone else on the site, for the crew card. Loaded alongside; a failure just drops the card.
 const crewData = Promise.all(
@@ -182,7 +183,8 @@ function buildSlides(s) {
       <h1 class="big mid fit">Boulders<br>Wrapped</h1>
       <p class="line">${s.y === 'all' ? 'Every session, ever.' : `${s.y}${Number(s.y) === lastYear && today.getUTCFullYear() === lastYear ? ', so far' : ''}.`} ${plural(s.sessions.length, 'session')}, ${plural(s.sends.length, 'top')}.</p>
       <div class="years">${[...YEARS.map(String), 'all'].map((y) => `<button type="button" data-year="${y}" aria-pressed="${y === s.y}">${y === 'all' ? 'All time' : y}</button>`).join('')}</div>
-      <p class="hint">Tap the right side to continue</p>`,
+      <p class="hint">Tap the right side to continue</p>
+      <p class="credit">Built by <a href="https://hetwiel.dev">${esc(OWNER)}</a></p>`,
   });
 
   if (!s.sessions.length) {
@@ -405,7 +407,7 @@ function buildSlides(s) {
           <div><b>${s.hardest ? gradeName(s.hardest.grade) : '–'}</b><span>hardest</span></div>
           <div><b>${pct(s.flashRate)}</b><span>flashed</span></div>
         </div>
-        <div class="url">${esc(location.host + location.pathname.replace(/wrapped\.html$/, ''))}</div>
+        <div class="url">Built by ${esc(OWNER)} · ${esc(location.host + location.pathname.replace(/wrapped\.html$/, ''))}</div>
       </div>
       <div class="actions">
         <button type="button" class="primary" data-act="save">Save image</button>

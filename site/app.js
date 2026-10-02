@@ -29,6 +29,9 @@ const climberParam = isOwner ? null : climber.slug;
 const title = isOwner ? 'My Boulders' : `${climber.name}'s Boulders`;
 document.title = title;
 document.getElementById('title').textContent = title;
+// Credit the site's owner; on a friend's page make clear who built it.
+const owner = climbers[0].name;
+document.getElementById('byline').innerHTML = `${isOwner ? 'by' : 'built by'} <a href="https://hetwiel.dev">${owner}</a>`;
 
 // Climber switcher, only once friends are on the site.
 if (climbers.length > 1) {

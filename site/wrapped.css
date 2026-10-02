@@ -172,3 +172,5 @@ body {
 .rank.crew li.me { font-size: 30px; font-variation-settings: "wdth" 105; }
 .rank.crew li:first-child:not(.me) { font-size: 22px; font-variation-settings: "wdth" 85; }
 .chips span { font-size: 13px; }
+.credit { position: absolute !important; z-index: 4 !important; right: 24px; bottom: 40px; margin: 0; font-size: 13px; font-weight: 600; opacity: .75; }
+.credit a { color: inherit; font-weight: 800; }
