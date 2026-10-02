@@ -1,0 +1,82 @@
+name: Sync TopLogger & deploy
+
+on:
+  schedule:
+    - cron: '17 5 * * *' # daily, ~07:17 in Amsterdam
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['site/**', 'scripts/**', '.github/workflows/**']
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: sync-and-deploy
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    # Code pushes only need a redeploy; the schedule and the manual button also pull new data.
+    if: github.event_name != 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # The refresh token rotates on every run. The newest one lives in the Actions
+      # cache (private to this repo), so the TL_REFRESH_TOKEN secret is only needed once.
+      - name: Restore TopLogger session
+        uses: actions/cache/restore@v4
+        with:
+          path: .tl-auth
+          key: tl-auth-${{ github.run_id }}
+          restore-keys: tl-auth-
+
+      - name: Pull sessions from TopLogger
+        env:
+          TL_REFRESH_TOKEN: ${{ secrets.TL_REFRESH_TOKEN }}
+        run: node scripts/sync.mjs
+
+      - name: Save TopLogger session
+        if: always() && hashFiles('.tl-auth/refresh-token') != ''
+        uses: actions/cache/save@v4
+        with:
+          path: .tl-auth
+          key: tl-auth-${{ github.run_id }}
+
+      - name: Commit new data
+        run: |
+          if git diff --quiet -- site/data; then
+            echo "No new climbs."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add site/data
+          git commit -m "Sync TopLogger data ($(date -u +%F))"
+          git push
+
+  deploy:
+    needs: sync
+    # Deploy even when the sync failed (e.g. expired token), so the site keeps the last good data.
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+      - id: deployment
+        uses: actions/deploy-pages@v4

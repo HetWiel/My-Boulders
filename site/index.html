@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>My Boulders</title>
+  <meta name="description" content="Bouldering sessions from TopLogger, visualized.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M4 26 11 9l6 9 4-5 7 13z' fill='%233987e5'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,400..800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="top">
+    <div class="wrap">
+      <p class="eyebrow" id="meta">Loading…</p>
+      <h1>My Boulders</h1>
+      <nav class="filters" id="filters" aria-label="Time range"></nav>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="stats" id="stats" aria-label="Headline numbers"></section>
+
+    <section class="card" aria-labelledby="h-cal">
+      <div class="card-head">
+        <h2 id="h-cal">Sessions</h2>
+        <p class="sub">Every day you logged a climb. The stronger the blue, the more you sent.</p>
+      </div>
+      <div class="scroll-x"><div id="calendar"></div></div>
+      <div class="cal-key" id="cal-key"></div>
+    </section>
+
+    <section class="card" aria-labelledby="h-prog">
+      <div class="card-head">
+        <h2 id="h-prog">Progression</h2>
+        <p class="sub">Each dot is a boulder you sent. The line is your hardest send per session, averaged over five sessions.</p>
+        <div class="legend" data-legend="ticks"></div>
+      </div>
+      <div id="progression" class="chart"></div>
+    </section>
+
+    <div class="grid-2">
+      <section class="card" aria-labelledby="h-pyr">
+        <div class="card-head">
+          <h2 id="h-pyr">Grade pyramid</h2>
+          <p class="sub">Unique boulders per grade. Grey: tried, never topped.</p>
+          <div class="legend" data-legend="pyramid"></div>
+        </div>
+        <div id="pyramid" class="chart"></div>
+      </section>
+
+      <section class="card" aria-labelledby="h-walls">
+        <div class="card-head">
+          <h2 id="h-walls">Walls</h2>
+          <p class="sub" id="walls-sub">Share of boulders sent per wall.</p>
+          <div class="legend" data-legend="ticks"></div>
+        </div>
+        <div id="walls" class="chart"></div>
+      </section>
+    </div>
+
+    <section class="card" aria-labelledby="h-strips">
+      <div class="card-head">
+        <h2 id="h-strips">Session fingerprints</h2>
+        <p class="sub">One row per session, one hold per boulder in its real colour, easiest to hardest. Filled = sent, ring = not yet.</p>
+      </div>
+      <div id="strips"></div>
+    </section>
+
+    <div class="grid-2">
+      <section class="card" aria-labelledby="h-week">
+        <div class="card-head">
+          <h2 id="h-week">When you climb</h2>
+          <p class="sub">Sessions per weekday.</p>
+        </div>
+        <div id="weekdays" class="chart"></div>
+      </section>
+      <section class="card" aria-labelledby="h-gyms">
+        <div class="card-head">
+          <h2 id="h-gyms">Where you climb</h2>
+          <p class="sub">Sessions per gym.</p>
+        </div>
+        <div id="gyms" class="chart"></div>
+      </section>
+    </div>
+
+    <details class="card table-card">
+      <summary><h2>All sessions</h2><span class="sub" id="table-count"></span></summary>
+      <div class="scroll-x"><table id="table"></table></div>
+    </details>
+  </main>
+
+  <footer class="wrap foot">
+    <p>Data from <a href="https://app.toplogger.nu">TopLogger</a>, synced daily. Built with <a href="https://observablehq.com/plot/">Observable Plot</a>.</p>
+  </footer>
+
+  <div id="tip" class="tip" role="tooltip" hidden></div>
+  <script type="module" src="app.js"></script>
+</body>
+</html>
