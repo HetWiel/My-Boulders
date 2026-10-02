@@ -87,6 +87,12 @@ h2 { margin: 0; font-size: 17px; font-weight: 700; font-variation-settings: "wdt
 .sub { margin: 4px 0 0; color: var(--text-secondary); font-size: 13.5px; }
 
 .filters { display: flex; flex-wrap: wrap; gap: 6px; }
+.climbers { display: flex; flex-wrap: wrap; gap: 4px 18px; margin: 0 0 14px; }
+.climbers[hidden] { display: none; }
+.climbers a { font-size: 15px; font-weight: 700; color: var(--text-muted); text-decoration: none; padding: 4px 0; border-bottom: 2px solid transparent; }
+.climbers a:hover { color: var(--text-primary); }
+.climbers a[aria-current="page"] { color: var(--text-primary); border-bottom-color: var(--accent); }
+.climbers a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 .wrapped-link {
   display: inline-flex; align-items: center; gap: 10px; margin: 0 0 18px;
   padding: 12px 20px 12px 14px; border-radius: 999px; text-decoration: none;

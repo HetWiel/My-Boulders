@@ -1,6 +1,6 @@
 import * as Plot from 'https://cdn.jsdelivr.net/npm/@observablehq/plot@0.6/+esm';
 import * as d3 from 'https://cdn.jsdelivr.net/npm/d3@7/+esm';
-import { FONT, snap, gradeName, parse, DAY, loadData, summarize } from './lib.js';
+import { FONT, snap, gradeName, parse, DAY, loadClimbers, loadData, pageUrl, summarize } from './lib.js';
 
 // ---------- helpers ----------
 const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
@@ -22,7 +22,22 @@ function showTip(evt, html) {
 const hideTip = () => (tip.hidden = true);
 
 // ---------- data ----------
-const { gymName, sessions: allSessions, logs: allLogs } = await loadData();
+const { list: climbers, current: climber, isOwner } = await loadClimbers();
+const { gymName, sessions: allSessions, logs: allLogs } = await loadData(climber.slug);
+const climberParam = isOwner ? null : climber.slug;
+
+const title = isOwner ? 'My Boulders' : `${climber.name}'s Boulders`;
+document.title = title;
+document.getElementById('title').textContent = title;
+
+// Climber switcher, only once friends are on the site.
+if (climbers.length > 1) {
+  const nav = document.getElementById('climbers');
+  nav.hidden = false;
+  nav.innerHTML = climbers
+    .map((c, i) => `<a href="${pageUrl('./', { climber: i ? c.slug : null })}"${c.slug === climber.slug ? ' aria-current="page"' : ''}>${c.name}</a>`)
+    .join('');
+}
 
 const lastDate = d3.max(allSessions, (s) => s.d);
 const firstDate = d3.min(allSessions, (s) => s.d);
@@ -38,7 +53,7 @@ document.getElementById('meta').textContent =
   `${allSessions.length} sessions since ${d3.utcFormat('%B %Y')(firstDate)} · last session ${fmtShort(lastDate)}`;
 
 // ---------- state ----------
-let range = RANGES[0];
+let range = RANGES.find((r) => r.id === new URLSearchParams(location.search).get('year')) || RANGES[0];
 let stripLimit = 12;
 const inRange = (d) => (!range.from || d >= range.from) && (!range.to || d < range.to);
 
@@ -386,6 +401,12 @@ function renderTable(sessions, perSession) {
 // ---------- render ----------
 function render() {
   for (const b of filtersEl.children) b.setAttribute('aria-pressed', String(b.dataset.id === range.id));
+  // Keep the URL shareable, and point the Wrapped button at the year being looked at.
+  history.replaceState(null, '', pageUrl(location.pathname, { climber: climberParam, year: range.id === 'all' ? null : range.id }));
+  const isYear = /^\d{4}$/.test(range.id);
+  const wrappedLink = document.getElementById('wrapped-link');
+  wrappedLink.href = pageUrl('wrapped.html', { climber: climberParam, year: isYear ? range.id : range.id === 'all' ? 'all' : null });
+  wrappedLink.textContent = isYear ? `Play ${range.id} Wrapped` : range.id === 'all' ? 'Play all-time Wrapped' : 'Play Boulders Wrapped';
   const sessions = allSessions.filter((s) => inRange(s.d));
   const logs = allLogs.filter((l) => inRange(l.d));
   const { perSession, perClimb } = summarize(logs);

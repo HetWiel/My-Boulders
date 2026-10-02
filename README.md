@@ -8,7 +8,8 @@ The site is plain HTML + [Observable Plot](https://observablehq.com/plot/), host
 
 ```
 site/              the website: dashboard (index.html, app.js) and Wrapped (wrapped.*), shared code in lib.js
-site/data/         climbs.json — written by the sync, read by the site
+climbers.json      who gets synced (you + friends, each switched on or off)
+site/data/         one JSON file per climber + climbers.json index, written by the sync
 scripts/sync.mjs   pulls sessions + logs from TopLogger's GraphQL API
 .github/workflows/ daily sync + Pages deploy
 ```
@@ -38,6 +39,21 @@ Treat the token like a password: it gives access to your TopLogger account.
 ### 3. First run
 
 **Actions → Sync TopLogger & deploy → Run workflow.** After that it runs daily on its own.
+
+## Adding friends
+
+Friends are synced with **your** TopLogger login, the same way the app shows you their profile. So it works for anyone whose profile is public, or who accepted your follow. They don't have to give you anything.
+
+1. Ask them first: the repo is public, so their sessions become public too.
+2. In `climbers.json`, set `"enabled": true` for them (or add a new line). Their user ID is in the URL of their TopLogger profile.
+   ```json
+   { "slug": "bas", "name": "Bas", "userId": "nfod5qyge8ibwnn0uqgr7", "enabled": true }
+   ```
+3. Commit. The workflow syncs them right away.
+
+Each climber gets their own dashboard (`?climber=bas`) and Wrapped, and Wrapped gets a crew card ranking everyone. If a friend's profile goes private, the sync skips them and keeps their last data. Set them to `false` and delete `site/data/<slug>.json` to remove them.
+
+The sync only refetches the last three weeks of sessions each day; older sessions are reused, so adding friends doesn't hammer TopLogger.
 
 ## When the sync breaks
 

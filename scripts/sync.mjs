@@ -1,5 +1,13 @@
 #!/usr/bin/env node
-// Pulls your bouldering sessions from TopLogger and writes site/data/climbs.json.
+// Pulls bouldering sessions from TopLogger and writes one JSON file per climber
+// into site/data/, plus site/data/climbers.json listing who's on the site.
+//
+// Who gets synced is set in climbers.json at the repo root:
+//   { "slug": "jasper", "userId": "me" }                          ← you (the token's owner)
+//   { "slug": "bas", "userId": "nfod5…", "enabled": false }       ← a friend, switched off
+// Friends are read with YOUR login, the same way the TopLogger app shows you their
+// profile, so it only works for people whose profile is public or who accepted your follow.
+// The repo is public: only enable a friend after they've said yes.
 //
 // Auth: TopLogger's sign-in needs a reCAPTCHA, so this script never logs in with a
 // password. It uses a refresh token instead (valid ~14 days). Every run swaps it for
@@ -11,7 +19,7 @@
 //   1. .tl-auth/refresh-token   (written by the previous run)
 //   2. TL_REFRESH_TOKEN env var (the GitHub secret you set once)
 
-import { readFile, writeFile, mkdir } from 'node:fs/promises';
+import { readFile, writeFile, mkdir, rename } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -19,7 +27,11 @@ import { fileURLToPath } from 'node:url';
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const ENDPOINT = 'https://app.toplogger.nu/graphql';
 const TOKEN_FILE = join(ROOT, '.tl-auth', 'refresh-token');
-const OUT_FILE = join(ROOT, 'site', 'data', 'climbs.json');
+const CONFIG_FILE = join(ROOT, 'climbers.json');
+const DATA_DIR = join(ROOT, 'site', 'data');
+// Sessions older than this are reused from the last run instead of refetched,
+// unless TopLogger reports a different number of tries for them.
+const REFETCH_DAYS = 21;
 
 const Q_REFRESH = `mutation authSigninRefreshToken($refreshToken: JWT!) {
   tokens: authSigninRefreshToken(refreshToken: $refreshToken) {
@@ -27,6 +39,8 @@ const Q_REFRESH = `mutation authSigninRefreshToken($refreshToken: JWT!) {
     refresh { token expiresAt }
   }
 }`;
+
+const Q_USER = `query userForNameFollow($userId: ID!) { user(id: $userId) { id fullName } }`;
 
 const Q_DAYS = `query climbDaysSessionsList($userId: ID!, $pagination: PaginationInputClimbDays) {
   climbDaysPaginated(userId: $userId, totalTriesMin: 1, pagination: $pagination) {
@@ -121,26 +135,35 @@ async function paginate(query, variables, pick, bearer, perPage) {
   }
 }
 
-async function main() {
-  const { access, userId } = await signIn();
-  if (!userId) throw new Error('Could not read your user id from the access token.');
+const readJson = async (file, fallback) => (existsSync(file) ? JSON.parse(await readFile(file, 'utf8')) : fallback);
 
+async function syncClimber(access, userId, prev) {
   const days = await paginate(Q_DAYS, { userId }, (d) => d.climbDaysPaginated, access, 50);
-  console.log(`Found ${days.length} sessions.`);
+
+  const prevSessions = new Map((prev?.sessions || []).map((s) => [s.id, s]));
+  const prevLogs = new Map();
+  for (const l of prev?.logs || []) {
+    const k = `${l.date}|${l.gym}`;
+    if (!prevLogs.has(k)) prevLogs.set(k, []);
+    prevLogs.get(k).push(l);
+  }
+  const cutoff = new Date(Date.now() - REFETCH_DAYS * 864e5).toISOString().slice(0, 10);
 
   const gyms = {};
   const sessions = [];
   const logs = [];
+  let fetched = 0;
   for (const d of days) {
+    const date = d.statsAtDate.slice(0, 10);
     gyms[d.gym.id] = {
       name: d.gym.name.trim(),
       slug: d.gym.nameSlug,
       city: d.gym.city?.trim() || null,
       system: d.gym.gradingSystemBoulders,
     };
-    sessions.push({
+    const session = {
       id: d.id,
-      date: d.statsAtDate.slice(0, 10),
+      date,
       gym: d.gymId,
       title: d.title || null,
       boulderTries: d.bouldersTotalTries,
@@ -148,14 +171,18 @@ async function main() {
       dayGrade: d.bouldersDayGrade,
       dayGradeMax: d.bouldersDayGradeMax,
       flashPct: d.bouldersDayGradeFlPct,
-    });
-    const dayLogs = await paginate(
-      Q_LOGS,
-      { gymId: d.gymId, userId, climbedAtDate: d.statsAtDate },
-      (r) => r.climbLogs,
-      access,
-      100
-    );
+    };
+    sessions.push(session);
+
+    const old = prevSessions.get(d.id);
+    const reuse = old && date < cutoff && old.boulderTries === session.boulderTries && old.routeTries === session.routeTries && prevLogs.has(`${date}|${d.gymId}`);
+    if (reuse) {
+      logs.push(...prevLogs.get(`${date}|${d.gymId}`));
+      continue;
+    }
+
+    const dayLogs = await paginate(Q_LOGS, { gymId: d.gymId, userId, climbedAtDate: d.statsAtDate }, (r) => r.climbLogs, access, 100);
+    fetched++;
     for (const l of dayLogs) {
       logs.push({
         date: l.climbedAtDate.slice(0, 10),
@@ -181,17 +208,55 @@ async function main() {
   }
 
   sessions.sort((a, b) => a.date.localeCompare(b.date));
-  logs.sort((a, b) => b.date.localeCompare(a.date) || a.try - b.try);
+  logs.sort((a, b) => b.date.localeCompare(a.date) || a.gym.localeCompare(b.gym) || a.try - b.try || a.climb.localeCompare(b.climb));
+  return { data: { gyms, sessions, logs }, fetched };
+}
 
-  const next = JSON.stringify({ gyms, sessions, logs });
-  const prev = existsSync(OUT_FILE) ? await readFile(OUT_FILE, 'utf8') : '';
-  if (prev === next) {
-    console.log('No changes.');
-    return;
+async function main() {
+  const { access, userId: myId } = await signIn();
+  if (!myId) throw new Error('Could not read your user id from the access token.');
+
+  const config = (await readJson(CONFIG_FILE, [{ slug: 'me', userId: 'me' }])).filter((c) => c.enabled !== false);
+  await mkdir(DATA_DIR, { recursive: true });
+
+  // One-time move: the single-climber site stored everything in climbs.json.
+  const legacy = join(DATA_DIR, 'climbs.json');
+  const mine = config.find((c) => c.userId === 'me');
+  if (mine && existsSync(legacy) && !existsSync(join(DATA_DIR, `${mine.slug}.json`))) {
+    await rename(legacy, join(DATA_DIR, `${mine.slug}.json`));
   }
-  await mkdir(dirname(OUT_FILE), { recursive: true });
-  await writeFile(OUT_FILE, next);
-  console.log(`Wrote ${sessions.length} sessions and ${logs.length} logs.`);
+
+  const index = [];
+  let failures = 0;
+  for (const c of config) {
+    const userId = c.userId === 'me' ? myId : c.userId;
+    const file = join(DATA_DIR, `${c.slug}.json`);
+    try {
+      const prev = await readJson(file, null);
+      const { user } = await gql(Q_USER, { userId }, access);
+      const { data, fetched } = await syncClimber(access, userId, prev);
+      const next = JSON.stringify(data);
+      if (!prev || JSON.stringify(prev) !== next) await writeFile(file, next);
+      console.log(`${c.slug}: ${data.sessions.length} sessions, ${data.logs.length} logs (${fetched} sessions refetched).`);
+      index.push({
+        slug: c.slug,
+        name: c.name || user.fullName.trim().split(/\s+/)[0],
+        sessions: data.sessions.length,
+        lastSession: data.sessions.at(-1)?.date ?? null,
+      });
+    } catch (err) {
+      failures++;
+      // Keep showing the last good data for this climber.
+      console.warn(`${c.slug}: sync failed (${err.message}). Their profile may be private, or you no longer follow them.`);
+      const prev = await readJson(file, null);
+      if (prev) index.push({ slug: c.slug, name: c.name || c.slug, sessions: prev.sessions.length, lastSession: prev.sessions.at(-1)?.date ?? null });
+    }
+  }
+
+  const indexFile = join(DATA_DIR, 'climbers.json');
+  const nextIndex = JSON.stringify(index, null, 2) + '\n';
+  if (!existsSync(indexFile) || (await readFile(indexFile, 'utf8')) !== nextIndex) await writeFile(indexFile, nextIndex);
+  if (failures === config.length) throw new Error('Every climber failed to sync.');
 }
 
 main().catch((err) => {

@@ -168,3 +168,7 @@ body {
 }
 
 .share-title { margin-bottom: 18px !important; }
+.rank.crew li { font-size: 22px; font-variation-settings: "wdth" 85; }
+.rank.crew li.me { font-size: 30px; font-variation-settings: "wdth" 105; }
+.rank.crew li:first-child:not(.me) { font-size: 22px; font-variation-settings: "wdth" 85; }
+.chips span { font-size: 13px; }

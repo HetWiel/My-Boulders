@@ -1,8 +1,15 @@
 import * as d3 from 'https://cdn.jsdelivr.net/npm/d3@7/+esm';
-import { CLIMBER, DAY, gradeName, loadData, summarize } from './lib.js';
+import { DAY, gradeName, loadClimbers, loadData, pageUrl, summarize } from './lib.js';
 
 // ---------- data ----------
-const { gymName, sessions: allSessions, logs: allLogs } = await loadData();
+const { list: climbers, current: climber, isOwner } = await loadClimbers();
+const { gymName, sessions: allSessions, logs: allLogs } = await loadData(climber.slug);
+const CLIMBER = climber.name;
+const climberParam = isOwner ? null : climber.slug;
+// Everyone else on the site, for the crew card. Loaded alongside; a failure just drops the card.
+const crewData = Promise.all(
+  climbers.map((c) => (c.slug === climber.slug ? { c, data: { sessions: allSessions, logs: allLogs } } : loadData(c.slug).then((data) => ({ c, data }))))
+).catch(() => null);
 const today = new Date();
 const lastYear = d3.max(allSessions, (s) => s.d).getUTCFullYear();
 const firstYear = d3.min(allSessions, (s) => s.d).getUTCFullYear();
@@ -106,6 +113,20 @@ function computeStats(y) {
     gradeCounts, topGrade, hardest, nemesis, ghosted, gotAway, best, tiny, gap, gyms, months, points, repeats,
     flashRate: sends.length ? flashes.length / sends.length : 0,
     perSessionTops: sessions.length ? sends.length / sessions.length : 0,
+  };
+}
+
+function crewLine(c, data, y) {
+  const inYear = (d) => y === 'all' || d.getUTCFullYear() === Number(y);
+  const sessions = data.sessions.filter((x) => inYear(x.d));
+  const { perClimb } = summarize(data.logs.filter((l) => inYear(l.d)));
+  const sends = perClimb.filter((x) => x.sent);
+  const hardest = d3.greatest(sends.filter((x) => x.g), (a, b) => a.g - b.g);
+  return {
+    slug: c.slug, name: c.name, me: c.slug === climber.slug,
+    sessions: sessions.length, tops: sends.length,
+    flash: sends.length ? sends.filter((x) => x.how === 'flash').length / sends.length : 0,
+    hardest: hardest?.g || 0,
   };
 }
 
@@ -338,6 +359,24 @@ function buildSlides(s) {
     });
   }
 
+  // 13b. Crew: how you stack up against the other climbers on this site
+  if (s.crew && s.crew.length > 1) {
+    const crew = [...s.crew].sort((a, b) => b.tops - a.tops || b.sessions - a.sessions);
+    const rank = crew.findIndex((c) => c.me) + 1;
+    const crown = (key, label, fmt = (v) => v) => {
+      const best = d3.greatest(crew, (c) => c[key]);
+      return `<span>${label}: ${esc(best.me ? 'you' : best.name)} (${fmt(best[key])})</span>`;
+    };
+    const last = rank === crew.length;
+    add({
+      html: `<p class="kicker">Your crew in ${label}</p>
+        <h1 class="big small fit">${rank === 1 ? 'Top of the crew.' : last ? 'Last place.' : `#${rank} of ${crew.length}.`}</h1>
+        <ol class="rank crew">${crew.map((c, i) => `<li class="${c.me ? 'me' : ''}"><span class="n">${i + 1}</span><span>${esc(c.me ? `${c.name} (you)` : c.name)}</span><span class="c">${c.tops} tops</span></li>`).join('')}</ol>
+        <div class="chips">${crown('sessions', 'Most sessions')}${crown('hardest', 'Hardest top', gradeName)}${crown('flash', 'Best flash rate', pct)}</div>
+        ${tape(rank === 1 ? 'Ranked by tops. Insufferable from now on.' : last ? 'Ranked by tops. Somebody has to hold the crash pad.' : `Ranked by tops. ${esc(crew[0].name)} is ${crew[0].tops - crew[rank - 1].tops} tops ahead. Just saying.`)}`,
+    });
+  }
+
   // 14. Personality
   const p = personality(s);
   add({
@@ -372,6 +411,7 @@ function buildSlides(s) {
         <button type="button" class="primary" data-act="save">Save image</button>
         <button type="button" data-act="share">Share link</button>
         <button type="button" data-act="replay">Replay</button>
+        <a href="${pageUrl('./', { climber: climberParam, year: s.y })}">See all the details</a>
       </div>`,
   });
 
@@ -400,8 +440,11 @@ const progressEl = document.getElementById('progress');
 let slides = [];
 let idx = 0;
 
-function render(resetTo = 0) {
+async function render(resetTo = 0) {
   const stats = computeStats(year);
+  const crew = await crewData;
+  if (crew && crew.length > 1) stats.crew = crew.map(({ c, data }) => crewLine(c, data, year)).filter((c) => c.sessions > 0);
+  document.querySelector('.close').href = pageUrl('./', { climber: climberParam, year: year === 'all' ? null : year });
   slides = buildSlides(stats);
   slidesEl.innerHTML = slides
     .map((s, i) => `<section class="slide" style="--bg:${s.bg};--ink:${inkFor(s.bg)};--tilt:${s.tilt || (i % 2 ? '1.5deg' : '-2deg')}" aria-label="Card ${i + 1} of ${slides.length}">${s.html}</section>`)
@@ -463,7 +506,7 @@ slidesEl.addEventListener('click', async (e) => {
   const yBtn = e.target.closest('[data-year]');
   if (yBtn) {
     year = yBtn.dataset.year;
-    history.replaceState(null, '', `?year=${year}`);
+    history.replaceState(null, '', pageUrl(location.pathname, { climber: climberParam, year }));
     return render(0);
   }
   const act = e.target.closest('[data-act]')?.dataset.act;
@@ -473,8 +516,8 @@ slidesEl.addEventListener('click', async (e) => {
 });
 
 async function shareLink() {
-  const url = `${location.origin}${location.pathname}?year=${year}`;
-  const text = `My bouldering ${year === 'all' ? 'all-time' : year} wrapped 🧗`;
+  const url = location.origin + pageUrl(location.pathname, { climber: climberParam, year });
+  const text = `${isOwner ? 'My' : `${CLIMBER}'s`} bouldering ${year === 'all' ? 'all-time' : year} wrapped 🧗`;
   if (navigator.share) return navigator.share({ title: 'Boulders Wrapped', text, url }).catch(() => {});
   await navigator.clipboard.writeText(url);
   toast('Link copied');

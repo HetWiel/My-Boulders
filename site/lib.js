@@ -1,9 +1,6 @@
 // Shared by the dashboard (app.js) and the year-in-review (wrapped.js).
 import * as d3 from 'https://cdn.jsdelivr.net/npm/d3@7/+esm';
 
-// Shown on the Wrapped cards. Change to your own name if you fork this.
-export const CLIMBER = 'Jasper';
-
 // TopLogger stores grades as numbers: 600 = 6a, 617 = 6a+, 633 = 6b … (Font scale).
 export const FONT = [
   [200, '2'], [250, '2+'], [300, '3a'], [333, '3b'], [367, '3c'], [400, '4a'], [433, '4b'], [467, '4c'],
@@ -23,8 +20,16 @@ export const gradeName = (g) => (g ? FONT.find(([v]) => v === snap(g))[1] : '?')
 export const DAY = 864e5;
 export const parse = (s) => new Date(s + 'T00:00:00Z');
 
-export async function loadData(url = 'data/climbs.json') {
-  const raw = await fetch(url, { cache: 'no-cache' }).then((r) => r.json());
+// Who's on the site (written by the sync). The first climber is the site's owner.
+export async function loadClimbers() {
+  const list = await fetch('data/climbers.json', { cache: 'no-cache' }).then((r) => r.json());
+  const want = new URLSearchParams(location.search).get('climber');
+  const current = list.find((c) => c.slug === want) || list[0];
+  return { list, current, isOwner: current === list[0] };
+}
+
+export async function loadData(slug) {
+  const raw = await fetch(`data/${slug}.json`, { cache: 'no-cache' }).then((r) => r.json());
   const gyms = raw.gyms;
   return {
     gyms,
@@ -32,6 +37,15 @@ export async function loadData(url = 'data/climbs.json') {
     sessions: raw.sessions.map((s) => ({ ...s, d: parse(s.date) })),
     logs: raw.logs.filter((l) => l.type === 'boulder').map((l) => ({ ...l, d: parse(l.date), g: snap(l.grade) })),
   };
+}
+
+// Build a link to the dashboard or Wrapped that keeps the climber and year.
+export function pageUrl(page, { climber, year } = {}) {
+  const p = new URLSearchParams();
+  if (climber) p.set('climber', climber);
+  if (year) p.set('year', year);
+  const q = p.toString();
+  return `${page}${q ? `?${q}` : ''}`;
 }
 
 // Turn raw logs into one record per boulder per session (what you did on it that day),
