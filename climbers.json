@@ -1,6 +1,6 @@
 [
   { "slug": "jasper", "name": "Jasper", "userId": "me" },
-  { "slug": "bas", "name": "Bas", "userId": "nfod5qyge8ibwnn0uqgr7", "enabled": false },
-  { "slug": "harm", "name": "Harm", "userId": "84br29qrknge4963sv8ls", "enabled": false },
-  { "slug": "robbert", "name": "Robbert", "userId": "iq7lueawr05ad7hfoubvi", "enabled": false }
+  { "slug": "bas", "name": "Bas", "userId": "nfod5qyge8ibwnn0uqgr7", "enabled": true },
+  { "slug": "harm", "name": "Harm", "userId": "84br29qrknge4963sv8ls", "enabled": true },
+  { "slug": "robbert", "name": "Robbert", "userId": "iq7lueawr05ad7hfoubvi", "enabled": true }
 ]
