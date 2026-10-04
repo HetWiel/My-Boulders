@@ -1,4 +1,4 @@
-name: Sync TopLogger & deploy
+name: Sync TopLogger
 
 on:
   schedule:
@@ -8,13 +8,13 @@ on:
     branches: [main]
     paths: ['site/**', 'scripts/**', 'climbers.json', '.github/workflows/**']
 
+# The site itself is hosted on boulders.hetwiel.dev: the hetwiel deploy picks up
+# site/ (including the data committed below) every morning after this sync.
 permissions:
   contents: write
-  pages: write
-  id-token: write
 
 concurrency:
-  group: sync-and-deploy
+  group: sync
   cancel-in-progress: false
 
 jobs:
@@ -59,22 +59,3 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git commit -m "Sync TopLogger data ($(date -u +%F))"
           git push
-
-  deploy:
-    needs: sync
-    # Deploy even when the sync failed (e.g. expired token), so the site keeps the last good data.
-    if: ${{ !cancelled() }}
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: main
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: site
-      - id: deployment
-        uses: actions/deploy-pages@v4
