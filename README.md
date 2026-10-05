@@ -4,14 +4,14 @@ My bouldering sessions from [TopLogger](https://app.toplogger.nu), turned into c
 
 There's also **Boulders Wrapped** (`wrapped.html`): a Spotify-Wrapped-style story per year, with a climbing personality and a share card you can save as an image.
 
-The site is plain HTML + [Observable Plot](https://observablehq.com/plot/), hosted on GitHub Pages. A GitHub Action pulls new sessions from TopLogger every morning and redeploys.
+The site is plain HTML + [Observable Plot](https://observablehq.com/plot/), live at **https://boulders.hetwiel.dev**. A GitHub Action pulls new sessions from TopLogger every morning and commits them; the deploy of [HetWiel/hetwiel](https://github.com/HetWiel/hetwiel) picks up `site/` right after and puts it on the server.
 
 ```
 site/              the website: dashboard (index.html, app.js) and Wrapped (wrapped.*), shared code in lib.js
 climbers.json      who gets synced (you + friends, each switched on or off)
 site/data/         one JSON file per climber + climbers.json index, written by the sync
 scripts/sync.mjs   pulls sessions + logs from TopLogger's GraphQL API
-.github/workflows/ daily sync + Pages deploy
+.github/workflows/ daily sync
 ```
 
 ## One-time setup
@@ -32,13 +32,9 @@ TopLogger's sign-in needs a reCAPTCHA, so the sync can't log in with a password.
 
 Treat the token like a password: it gives access to your TopLogger account.
 
-### 2. GitHub Pages
+### 2. First run
 
-**Settings → Pages → Build and deployment → Source: GitHub Actions.**
-
-### 3. First run
-
-**Actions → Sync TopLogger & deploy → Run workflow.** After that it runs daily on its own.
+**Actions → Sync TopLogger → Run workflow.** After that it runs daily on its own.
 
 ## Adding friends
 
@@ -62,10 +58,10 @@ If the workflow doesn't run for more than 14 days (or the token is revoked), the
 ## Run locally
 
 ```sh
-TL_REFRESH_TOKEN=… node scripts/sync.mjs   # refresh site/data/climbs.json (Node 20+)
+TL_REFRESH_TOKEN=… node scripts/sync.mjs   # refresh site/data/ (Node 20+)
 python3 -m http.server -d site 8000        # open http://localhost:8000
 ```
 
 ## Note on privacy
 
-The repo is public, so `site/data/climbs.json` (dates, gyms, grades and walls of every logged boulder) is public too. Make the repo private if you'd rather not share that — GitHub Pages on a private repo needs a paid plan.
+The repo is public, so `site/data/` (dates, gyms, grades and walls of every logged boulder) is public too, and so is the site. Make the repo private if you'd rather not share that; the hetwiel deploy then needs a token with access to this repo to fetch it.
