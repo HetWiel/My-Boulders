@@ -1,0 +1,76 @@
+# The Apprentice: the ledger for this work.
+#
+# One entry per material the machine used to build this work.
+# level, from low to high:
+#   seen        the maker has looked at it; the machine built it
+#   understood  the maker explained it back in his own words and passed the questions
+#   by-hand     the maker made a change with it himself, without the machine typing
+#   taught      the maker can explain it to someone else, from scratch
+# since: the date the material reached its current level.
+#
+# The cards (what it is, where it lives, the questions, the by-hand task) are in APPRENTICE.md.
+# hetwiel.dev/apprentice/ is built from this file. Only change a level after a teach-back.
+
+work: My Boulders
+opened: 2026-10-05
+materials:
+  - id: graphql
+    name: A GraphQL API
+    note: Asking someone else's server for exactly the fields you need, in one request.
+    level: seen
+    since: 2026-10-05
+  - id: tokens
+    name: Access and refresh tokens
+    note: Staying signed in without a password, by trading an old token for a new one every day.
+    level: seen
+    since: 2026-10-05
+  - id: scheduled-job
+    name: A scheduled job
+    note: A script that runs every morning on GitHub's machines, with nobody pressing a button.
+    level: seen
+    since: 2026-10-05
+  - id: state-between-runs
+    name: Memory between runs
+    note: Carrying the newest token from one run to the next in a private cache.
+    level: seen
+    since: 2026-10-05
+  - id: incremental-sync
+    name: Incremental sync
+    note: Only fetching what can still have changed; the rest is reused from last time.
+    level: seen
+    since: 2026-10-05
+  - id: json-data
+    name: Data as files
+    note: No database. One JSON file per climber, committed to Git like any other change.
+    level: seen
+    since: 2026-10-05
+  - id: es-modules
+    name: JavaScript modules
+    note: Code split over files that import each other; libraries loaded straight from a CDN.
+    level: seen
+    since: 2026-10-05
+  - id: data-viz
+    name: Charts from data
+    note: Describing a chart as marks and scales, and letting a library draw it.
+    level: seen
+    since: 2026-10-05
+  - id: data-shaping
+    name: Shaping data
+    note: Grouping raw climbing logs into sessions, boulders and grades before anything is drawn.
+    level: seen
+    since: 2026-10-05
+  - id: url-state
+    name: State in the address
+    note: One page that shows a different climber or year depending on what's after the question mark.
+    level: seen
+    since: 2026-10-05
+  - id: share-image
+    name: Sharing an image
+    note: Turning a part of the page into a picture and handing it to the phone's share menu.
+    level: seen
+    since: 2026-10-05
+  - id: public-data
+    name: Public data, on purpose
+    note: A public repository means public data; friends only appear after they say yes.
+    level: seen
+    since: 2026-10-05
