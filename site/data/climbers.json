@@ -2,8 +2,8 @@
   {
     "slug": "jasper",
     "name": "Jasper",
-    "sessions": 71,
-    "lastSession": "2026-10-16"
+    "sessions": 72,
+    "lastSession": "2026-10-27"
   },
   {
     "slug": "bas",
@@ -14,13 +14,13 @@
   {
     "slug": "harm",
     "name": "Harm",
-    "sessions": 99,
-    "lastSession": "2026-10-20"
+    "sessions": 100,
+    "lastSession": "2026-10-27"
   },
   {
     "slug": "robbert",
     "name": "Robbert",
-    "sessions": 157,
-    "lastSession": "2026-10-24"
+    "sessions": 158,
+    "lastSession": "2026-10-27"
   }
 ]
