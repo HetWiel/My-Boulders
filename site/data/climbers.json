@@ -14,13 +14,13 @@
   {
     "slug": "harm",
     "name": "Harm",
-    "sessions": 100,
-    "lastSession": "2026-10-27"
+    "sessions": 101,
+    "lastSession": "2026-11-10"
   },
   {
     "slug": "robbert",
     "name": "Robbert",
-    "sessions": 162,
-    "lastSession": "2026-11-07"
+    "sessions": 163,
+    "lastSession": "2026-11-10"
   }
 ]
